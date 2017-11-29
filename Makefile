@@ -3,15 +3,16 @@ GIT_COMMIT = `git rev-parse HEAD | cut -c1-7`
 VERSION = 2.0.0-alpha.2
 BUILD_OPTIONS = -ldflags "-X main.Version=$(VERSION) -X main.CommitID=$(GIT_COMMIT)"
 
-
-gotty: server/asset.go main.go server/*.go webtty/*.go backend/*.go Makefile
+gotty: main.go server/*.go webtty/*.go backend/*.go Makefile
 	godep go build ${BUILD_OPTIONS}
 
-asset:  server/asset.go
-
-server/asset.go: bindata/static/js/gotty-bundle.js bindata/static/index.html bindata/static/favicon.png bindata/static/css/index.css bindata/static/css/xterm.css bindata/static/css/xterm_customize.css
+.PHONY: asset
+asset: bindata/static/js/gotty-bundle.js bindata/static/index.html bindata/static/favicon.png bindata/static/css/index.css bindata/static/css/xterm.css bindata/static/css/xterm_customize.css
 	go-bindata -prefix bindata -pkg server -ignore=\\.gitkeep -o server/asset.go bindata/...
 	gofmt -w server/asset.go
+
+.PHONY: all
+all: asset gotty
 
 bindata:
 	mkdir bindata
@@ -48,11 +49,13 @@ js/node_modules/xterm/dist/xterm.css:
 	cd js && \
 	npm install
 
-js/dist/gotty-bundle.js: js/src/*
+js/dist/gotty-bundle.js: js/src/* js/node_modules/webpack
 	cd js && \
-	webpack
+	`npm bin`/webpack
 
-
+js/node_modules/webpack:
+	cd js && \
+	npm install
 
 tools:
 	go get github.com/tools/godep
